@@ -11,6 +11,7 @@ import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
+import android.support.v7.widget.LinearLayoutManager
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -28,11 +29,14 @@ import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.DateTime
 import com.google.api.client.util.ExponentialBackOff
 import com.google.api.services.calendar.CalendarScopes
+import com.google.api.services.calendar.model.Event
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import com.jferris.calendarintegration.R
 import com.jferris.calendarintegration.activity.MainActivity
+import com.jferris.calendarintegration.adapter.EventAdapter
 import com.prolificinteractive.materialcalendarview.CalendarDay
+import com.prolificinteractive.materialcalendarview.OnDateSelectedListener
 import kotlinx.android.synthetic.main.fragment_calendar.*
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
@@ -51,6 +55,9 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     private val SCOPES = arrayOf(CalendarScopes.CALENDAR_READONLY)
     internal var mCredential: GoogleAccountCredential? = null
     val hash: HashSet<CalendarDay> = HashSet()
+    val dateList: ArrayList<Date> = ArrayList()
+    val eventList: ArrayList<Event> = ArrayList()
+    val allEvents: ArrayList<Event> = ArrayList()
     var decorator: CalendarDecorator? = null
 
     private val PREF_ACCOUNT_NAME = "accountName"
@@ -73,33 +80,44 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     }
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-        hash.add(CalendarDay.today())
-        decorator = CalendarDecorator(ContextCompat.getColor(context, R.color.colorAccent), hash)
-        calendarView.addDecorator(decorator)
-
-        val permissionListener = object : PermissionListener {
-            override fun onPermissionGranted() {
-                Toast.makeText(activity, "Permission granted", Toast.LENGTH_LONG).show()
-            }
-
-            override fun onPermissionDenied(deniedPermissions: ArrayList<String>?) {
-                Toast.makeText(activity, "Denied", Toast.LENGTH_LONG).show()
-            }
-        }
 
         mCredential = GoogleAccountCredential.usingOAuth2(
                 activity.getApplicationContext(), Arrays.asList<String>(*SCOPES))
                 .setBackOff(ExponentialBackOff())
 
-        sync_button.setOnClickListener {
-//            TedPermission(activity)
-//                    .setPermissionListener(permissionListener)
-//                    .setDeniedMessage("Don't reject me I'm fragile")
-//                    .setPermissions(Manifest.permission.INTERNET,
-//                            Manifest.permission.GET_ACCOUNTS,
-//                            Manifest.permission.ACCESS_NETWORK_STATE)
-//                    .check()
+        dateList.add(Date())
 
+        val recyclerView = event_list
+        val adapter = EventAdapter(eventList)
+        recyclerView.adapter = adapter
+        recyclerView.layoutManager = LinearLayoutManager(activity)
+
+        calendarView.setOnDateChangedListener(OnDateSelectedListener { widget, date, selected ->
+            run {
+                if (date in hash) {
+                    eventList.clear()
+                    for(i in allEvents) {
+                        var start: DateTime? = i.start.dateTime
+                        if (start == null) {
+                            start = i.start.date
+                        }
+                        val tempDate = Calendar.getInstance()
+                        tempDate.timeInMillis = start!!.value
+                        if(date.day == tempDate.get(Calendar.DAY_OF_MONTH) &&
+                                date.month == tempDate.get(Calendar.MONTH) &&
+                                date.year == tempDate.get(Calendar.YEAR)) {
+                            eventList.add(i)
+                        }
+                    }
+                    adapter.notifyDataSetChanged()
+                } else {
+                    eventList.clear()
+                    adapter.notifyDataSetChanged()
+                }
+            }
+        })
+
+        sync_button.setOnClickListener {
             getResultsFromApi()
         }
     }
@@ -171,7 +189,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
      * @param data Intent (containing result data) returned by incoming
      * *     activity result.
      */
-    public override fun onActivityResult(
+    override fun onActivityResult(
             requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
@@ -344,14 +362,15 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                 val items = events.items
 
                 for (event in items) {
+                    allEvents.add(event)
                     var start: DateTime? = event.start.dateTime
                     if (start == null) {
                         start = event.start.date
                     }
                     val date = Date(start!!.value)
                     hash.add(CalendarDay.from(date))
-                    eventStrings.add(
-                            String.format("%s (%s)", event.summary, start))
+//                    eventStrings.add(
+//                            String.format("%s (%s)", event.summary, start))
                 }
                 return eventStrings
             }
