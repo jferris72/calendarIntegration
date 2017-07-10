@@ -10,7 +10,9 @@ import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentActivity
 import android.support.v4.content.ContextCompat
+import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -30,6 +32,7 @@ import com.google.api.client.util.DateTime
 import com.google.api.client.util.ExponentialBackOff
 import com.google.api.services.calendar.CalendarScopes
 import com.google.api.services.calendar.model.Event
+import com.google.api.services.calendar.model.EventDateTime
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import com.jferris.calendarintegration.R
@@ -52,8 +55,8 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     private var mOutputText: TextView? = null
     private var mCallApiButton: Button? = null
     internal var mProgress: ProgressDialog? = null
-    private val SCOPES = arrayOf(CalendarScopes.CALENDAR_READONLY)
-    internal var mCredential: GoogleAccountCredential? = null
+    private val SCOPES = arrayOf(CalendarScopes.CALENDAR)
+    var mCredential: GoogleAccountCredential? = null
     val hash: HashSet<CalendarDay> = HashSet()
     val dateList: ArrayList<Date> = ArrayList()
     val eventList: ArrayList<Event> = ArrayList()
@@ -84,6 +87,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         mCredential = GoogleAccountCredential.usingOAuth2(
                 activity.getApplicationContext(), Arrays.asList<String>(*SCOPES))
                 .setBackOff(ExponentialBackOff())
+
 
         dateList.add(Date())
 
@@ -120,6 +124,62 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         sync_button.setOnClickListener {
             getResultsFromApi()
         }
+
+        add_button.setOnClickListener {
+            AddNewCalendarEvent(mCredential as GoogleAccountCredential, activity).execute()
+        }
+    }
+
+    class AddNewCalendarEvent internal constructor(credential: GoogleAccountCredential, activity: FragmentActivity): AsyncTask<Void, Void, String>() {
+        private var service: com.google.api.services.calendar.Calendar? = null
+        private var mLastError: Exception? = null
+        val mActivity = activity
+
+        init {
+            val transport = AndroidHttp.newCompatibleTransport()
+            val jsonFactory = JacksonFactory.getDefaultInstance()
+            service = com.google.api.services.calendar.Calendar.Builder(
+                    transport, jsonFactory, credential)
+                    .setApplicationName("Google Calendar API Android Quickstart")
+                    .build()
+        }
+
+        override fun doInBackground(vararg p0: Void?): String {
+//            try {
+//                val temp = service!!.CalendarList().get("primary").execute()
+//                val something = temp.summary
+//            } catch (e: UserRecoverableAuthIOException) {
+//                mActivity.startActivity(e.intent)
+//            }
+
+            try {
+                val event = Event()
+                        .setSummary("New summary")
+                        .setLocation("New Location")
+                        .setDescription("New Description")
+
+                val startDateTime = DateTime(Date())
+                val start = EventDateTime()
+                        .setDateTime(startDateTime)
+                        .setTimeZone("America/Los_Angeles")
+                event.setStart(start)
+
+                val endDateTime = DateTime(Date())
+                val endDate = DateTime(Date())
+                val end = EventDateTime()
+                        .setDateTime(endDateTime)
+                        .setTimeZone("America/Los_Angeles")
+                event.setEnd(end)
+
+                val calendarID = "primary"
+                service!!.events().insert(calendarID, event).execute()
+            } catch (e: UserRecoverableAuthIOException) {
+                mActivity.startActivity(e.intent)
+            }
+
+            return "You are at postexecute"
+        }
+
     }
 
 

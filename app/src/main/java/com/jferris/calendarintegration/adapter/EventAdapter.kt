@@ -20,6 +20,7 @@ class EventAdapter(val eventList: ArrayList<Event>): RecyclerView.Adapter<EventA
 
     class ViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
         val dateText = itemView.date_text
+        val descriptionText = itemView.description_text
     }
 
     override fun getItemCount(): Int {
@@ -40,5 +41,8 @@ class EventAdapter(val eventList: ArrayList<Event>): RecyclerView.Adapter<EventA
             start = eventList.get(position).start.date
         }
         holder!!.dateText.text = start.toString()
+        if(eventList.get(position).description != null) {
+            holder.descriptionText.text = eventList.get(position).description.toString()
+        }
     }
 }

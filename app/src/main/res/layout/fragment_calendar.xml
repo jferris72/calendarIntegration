@@ -21,7 +21,7 @@
 
     <Button
         android:id="@+id/sync_button"
-        android:layout_width="368dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="sync calendar"
         app:layout_constraintTop_toBottomOf="@+id/calendarView"
@@ -29,12 +29,21 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintHorizontal_bias="0.0" />
 
+    <Button
+        android:id="@+id/add_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="add to calendar"
+        app:layout_constraintTop_toBottomOf="@id/sync_button"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"/>
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/event_list"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:gravity="center"
-        app:layout_constraintTop_toBottomOf="@+id/sync_button"
+        app:layout_constraintTop_toBottomOf="@+id/add_button"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
