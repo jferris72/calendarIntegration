@@ -14,10 +14,13 @@ import android.support.v4.app.FragmentActivity
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -39,8 +42,9 @@ import com.jferris.calendarintegration.R
 import com.jferris.calendarintegration.activity.MainActivity
 import com.jferris.calendarintegration.adapter.EventAdapter
 import com.prolificinteractive.materialcalendarview.CalendarDay
+import com.prolificinteractive.materialcalendarview.MaterialCalendarView
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener
-import kotlinx.android.synthetic.main.fragment_calendar.*
+import kotlinx.android.synthetic.main.fragment_calendar_scroll.*
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
 import java.io.IOException
@@ -52,9 +56,6 @@ import java.util.*
  */
 class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.PermissionCallbacks {
     var mPresenter: CalendarContract.Presenter? = null
-    private var mOutputText: TextView? = null
-    private var mCallApiButton: Button? = null
-    internal var mProgress: ProgressDialog? = null
     private val SCOPES = arrayOf(CalendarScopes.CALENDAR)
     var mCredential: GoogleAccountCredential? = null
     val hash: HashSet<CalendarDay> = HashSet()
@@ -62,6 +63,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     val eventList: ArrayList<Event> = ArrayList()
     val allEvents: ArrayList<Event> = ArrayList()
     var decorator: CalendarDecorator? = null
+    var canScroll = true
 
     private val PREF_ACCOUNT_NAME = "accountName"
 
@@ -77,7 +79,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val root = inflater!!.inflate(R.layout.fragment_calendar, container, false)
+        val root = inflater!!.inflate(R.layout.fragment_calendar_scroll, container, false)
 
         return root
     }
@@ -88,46 +90,121 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                 activity.getApplicationContext(), Arrays.asList<String>(*SCOPES))
                 .setBackOff(ExponentialBackOff())
 
-
-        dateList.add(Date())
-
         val recyclerView = event_list
         val adapter = EventAdapter(eventList)
         recyclerView.adapter = adapter
-        recyclerView.layoutManager = LinearLayoutManager(activity)
+        val layoutManager = object : LinearLayoutManager(activity) {
+            override fun canScrollVertically(): Boolean {
+                return true
+            }
+
+            override fun canScrollHorizontally(): Boolean {
+                return false
+            }
+        }
+        recyclerView.layoutManager = layoutManager
+
+
+//        scroll_view.addOnScrollListener(object: RecyclerView.OnScrollListener() {
+//            override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
+//                if(dy > 50) {
+//                    calendarView.visibility = View.GONE
+//                    calendarViewWeek.visibility = View.VISIBLE
+//                }
+//            }
+//        })
+        scroll_view.isNestedScrollingEnabled = true
+        recyclerView.isNestedScrollingEnabled = true
+
+        scroll_view.viewTreeObserver.addOnScrollChangedListener {
+            val scrollY = scroll_view.scrollY
+            val scrollX = scroll_view.scrollX
+
+            if(scrollY < 100) {
+                calendarView.alpha = 1f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.visibility = View.INVISIBLE
+            }
+            if(scrollY > 300) {
+                calendarView.alpha = 0.7f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.visibility = View.INVISIBLE
+            }
+            if(scrollY > 500) {
+                calendarView.alpha = 0.5f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.visibility = View.INVISIBLE
+                canScroll = false
+                scroll_view.setScrollingEnabled(true)
+            }
+            if(scrollY > 700) {
+                calendarView.alpha = 0.3f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.alpha = 0.1f
+                calendarViewWeek.visibility = View.VISIBLE
+                canScroll = false
+                scroll_view.setScrollingEnabled(true)
+            }
+            if(scrollY > 900) {
+                calendarView.alpha = 0.1f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.alpha = 0.5f
+                calendarViewWeek.visibility = View.VISIBLE
+                canScroll = false
+                scroll_view.setScrollingEnabled(true)
+            }
+            if(scrollY > 1000) {
+                calendarView.visibility = View.INVISIBLE
+                calendarViewWeek.alpha = 1f
+                scroll_view.setScrollingEnabled(false)
+                scroll_view.scrollTo(0,1001)
+                canScroll = true
+            }
+
+        }
+
 
         calendarView.setOnDateChangedListener(OnDateSelectedListener { widget, date, selected ->
             run {
-                if (date in hash) {
-                    eventList.clear()
-                    for(i in allEvents) {
+//                if (date in hash) {
+                calendarViewWeek.selectedDate = date
+                calendarViewWeek.setCurrentDate(date)
+
+                eventList.clear()
+                    for (i in allEvents) {
                         var start: DateTime? = i.start.dateTime
                         if (start == null) {
                             start = i.start.date
                         }
-                        val tempDate = Calendar.getInstance()
-                        tempDate.timeInMillis = start!!.value
-                        if(date.day == tempDate.get(Calendar.DAY_OF_MONTH) &&
-                                date.month == tempDate.get(Calendar.MONTH) &&
-                                date.year == tempDate.get(Calendar.YEAR)) {
-                            eventList.add(i)
-                        }
+//                        val tempDate = Calendar.getInstance()
+//                        tempDate.timeInMillis = start!!.value
+//                        if(date.day == tempDate.get(Calendar.DAY_OF_MONTH) &&
+//                                date.month == tempDate.get(Calendar.MONTH) &&
+//                                date.year == tempDate.get(Calendar.YEAR)) {
+                        eventList.add(i)
+                        eventList.add(i)
+                        eventList.add(i)
+                        eventList.add(i)
+//                        }
                     }
                     adapter.notifyDataSetChanged()
-                } else {
-                    eventList.clear()
-                    adapter.notifyDataSetChanged()
-                }
+//                }
+//                } else {
+//                    eventList.clear()
+//                    adapter.notifyDataSetChanged()
+//                }
             }
         })
+        getResultsFromApi()
 
-        sync_button.setOnClickListener {
-            getResultsFromApi()
-        }
-
-        add_button.setOnClickListener {
-            AddNewCalendarEvent(mCredential as GoogleAccountCredential, activity).execute()
-        }
+//
+//        sync_button.setOnClickListener {
+//            getResultsFromApi()
+//        }
+//
+//        add_button.setOnClickListener {
+//            AddNewCalendarEvent(mCredential as GoogleAccountCredential, activity).execute()
+//        }
     }
 
     class AddNewCalendarEvent internal constructor(credential: GoogleAccountCredential, activity: FragmentActivity): AsyncTask<Void, Void, String>() {
@@ -145,12 +222,6 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         }
 
         override fun doInBackground(vararg p0: Void?): String {
-//            try {
-//                val temp = service!!.CalendarList().get("primary").execute()
-//                val something = temp.summary
-//            } catch (e: UserRecoverableAuthIOException) {
-//                mActivity.startActivity(e.intent)
-//            }
 
             try {
                 val event = Event()
@@ -421,6 +492,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                         .execute()
                 val items = events.items
 
+//                allEvents.clear()
                 for (event in items) {
                     allEvents.add(event)
                     var start: DateTime? = event.start.dateTime
@@ -429,47 +501,24 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                     }
                     val date = Date(start!!.value)
                     hash.add(CalendarDay.from(date))
-//                    eventStrings.add(
-//                            String.format("%s (%s)", event.summary, start))
+
                 }
                 return eventStrings
             }
 
 
         override fun onPreExecute() {
-//            mOutputText.setText("")
-//            mProgress.show()
+
         }
 
         override fun onPostExecute(output: List<String>?) {
             decorator = CalendarDecorator(ContextCompat.getColor(context, R.color.colorAccent), hash)
             calendarView.addDecorator(decorator)
-//            mProgress.hide()
-//            if (output == null || output.size == 0) {
-//                mOutputText.setText("No results returned.")
-//            } else {
-//                output.add(0, "Data retrieved using the Google Calendar API:")
-//                mOutputText.setText(TextUtils.join("\n", output))
-//        }
+            calendarViewWeek.addDecorator(decorator)
         }
 
         override fun onCancelled() {
-//            mProgress.hide()
-//            if (mLastError != null) {
-//                if (mLastError is GooglePlayServicesAvailabilityIOException) {
-//                    showGooglePlayServicesAvailabilityErrorDialog(
-//                            (mLastError as GooglePlayServicesAvailabilityIOException)
-//                                    .connectionStatusCode)
-//                } else if (mLastError is UserRecoverableAuthIOException) {
-//                    startActivityForResult(
-//                            (mLastError as UserRecoverableAuthIOException).intent,
-//                            MainActivity.REQUEST_AUTHORIZATION)
-//                } else {
-//                    mOutputText.setText("The following error occurred:\n" + mLastError!!.message)
-//                }
-//            } else {
-//                mOutputText.setText("Request cancelled.")
-//            }
+
         }
 
     }
