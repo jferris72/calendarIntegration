@@ -6,6 +6,7 @@ import android.app.Activity
 import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
+import android.graphics.Point
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
@@ -79,7 +80,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val root = inflater!!.inflate(R.layout.fragment_calendar_scroll, container, false)
+        val root = inflater!!.inflate(R.layout.fragment_scroll, container, false)
 
         return root
     }
@@ -95,7 +96,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         recyclerView.adapter = adapter
         val layoutManager = object : LinearLayoutManager(activity) {
             override fun canScrollVertically(): Boolean {
-                return true
+                return false
             }
 
             override fun canScrollHorizontally(): Boolean {
@@ -114,7 +115,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
 //            }
 //        })
         scroll_view.isNestedScrollingEnabled = true
-        recyclerView.isNestedScrollingEnabled = true
+        recyclerView.isNestedScrollingEnabled = false
 
         scroll_view.viewTreeObserver.addOnScrollChangedListener {
             val scrollY = scroll_view.scrollY
@@ -134,65 +135,70 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                 calendarView.alpha = 0.5f
                 calendarView.visibility = View.VISIBLE
                 calendarViewWeek.visibility = View.INVISIBLE
-                canScroll = false
-                scroll_view.setScrollingEnabled(true)
             }
             if(scrollY > 700) {
                 calendarView.alpha = 0.3f
                 calendarView.visibility = View.VISIBLE
                 calendarViewWeek.alpha = 0.1f
                 calendarViewWeek.visibility = View.VISIBLE
-                canScroll = false
-                scroll_view.setScrollingEnabled(true)
             }
             if(scrollY > 900) {
                 calendarView.alpha = 0.1f
                 calendarView.visibility = View.VISIBLE
                 calendarViewWeek.alpha = 0.5f
                 calendarViewWeek.visibility = View.VISIBLE
-                canScroll = false
-                scroll_view.setScrollingEnabled(true)
             }
             if(scrollY > 1000) {
                 calendarView.visibility = View.INVISIBLE
                 calendarViewWeek.alpha = 1f
-                scroll_view.setScrollingEnabled(false)
-                scroll_view.scrollTo(0,1001)
-                canScroll = true
+//                scroll_view.scrollTo(0,1001)
             }
 
         }
 
+        val display = activity.windowManager.defaultDisplay
+        val size = Point()
+        display.getSize(size)
+        val recyclerHeight = size.x - calendarViewWeek.height
+
 
         calendarView.setOnDateChangedListener(OnDateSelectedListener { widget, date, selected ->
             run {
-//                if (date in hash) {
-                calendarViewWeek.selectedDate = date
-                calendarViewWeek.setCurrentDate(date)
+                if (date in hash) {
+                    val params = recyclerView.layoutParams
+                    params.height = recyclerHeight
+                    recyclerView.layoutParams = params
 
-                eventList.clear()
+                    calendarViewWeek.selectedDate = date
+                    calendarViewWeek.setCurrentDate(date)
+
+                    eventList.clear()
                     for (i in allEvents) {
                         var start: DateTime? = i.start.dateTime
                         if (start == null) {
                             start = i.start.date
                         }
-//                        val tempDate = Calendar.getInstance()
-//                        tempDate.timeInMillis = start!!.value
-//                        if(date.day == tempDate.get(Calendar.DAY_OF_MONTH) &&
-//                                date.month == tempDate.get(Calendar.MONTH) &&
-//                                date.year == tempDate.get(Calendar.YEAR)) {
-                        eventList.add(i)
-                        eventList.add(i)
-                        eventList.add(i)
-                        eventList.add(i)
-//                        }
+                        val tempDate = Calendar.getInstance()
+                        tempDate.timeInMillis = start!!.value
+                        if (date.day == tempDate.get(Calendar.DAY_OF_MONTH) &&
+                                date.month == tempDate.get(Calendar.MONTH) &&
+                                date.year == tempDate.get(Calendar.YEAR)) {
+                            eventList.add(i)
+                            eventList.add(i)
+                            eventList.add(i)
+                            eventList.add(i)
+                        }
+
+                        adapter.notifyDataSetChanged()
+                        scroll_view.scrollTo(0,1001)
+                        calendarView.visibility = View.INVISIBLE
+                        calendarViewWeek.visibility = View.VISIBLE
+                        calendarViewWeek.alpha = 1f
                     }
-                    adapter.notifyDataSetChanged()
-//                }
-//                } else {
-//                    eventList.clear()
-//                    adapter.notifyDataSetChanged()
-//                }
+                } else {
+                        eventList.clear()
+                        adapter.notifyDataSetChanged()
+                }
             }
         })
         getResultsFromApi()
@@ -269,7 +275,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         } else if (!isDeviceOnline()) {
 //            mOutputText.setText("No network connection available.")
         } else {
-            MakeRequestTask(mCredential!!).execute()
+            MakeRequestTask(mCredential!!, activity).execute()
         }
     }
 
@@ -442,7 +448,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
 
 
 
-    private inner class MakeRequestTask internal constructor(credential: GoogleAccountCredential) : AsyncTask<Void, Void, List<String>>() {
+    private inner class MakeRequestTask internal constructor(credential: GoogleAccountCredential, activity: FragmentActivity) : AsyncTask<Void, Void, List<String>>() {
         private var mService: com.google.api.services.calendar.Calendar? = null
         private var mLastError: Exception? = null
 
@@ -482,28 +488,28 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         val dataFromApi: List<String>
             @Throws(IOException::class)
             get() {
-                val now = DateTime(System.currentTimeMillis())
-                val eventStrings = ArrayList<String>()
-                val events = mService!!.events().list("primary")
-                        .setMaxResults(10)
-                        .setTimeMin(now)
-                        .setOrderBy("startTime")
-                        .setSingleEvents(true)
-                        .execute()
-                val items = events.items
+                    val now = DateTime(System.currentTimeMillis())
+                    val eventStrings = ArrayList<String>()
+                    val events = mService!!.events().list("primary")
+                            .setMaxResults(10)
+                            .setTimeMin(now)
+                            .setOrderBy("startTime")
+                            .setSingleEvents(true)
+                            .execute()
+                    val items = events.items
 
 //                allEvents.clear()
-                for (event in items) {
-                    allEvents.add(event)
-                    var start: DateTime? = event.start.dateTime
-                    if (start == null) {
-                        start = event.start.date
-                    }
-                    val date = Date(start!!.value)
-                    hash.add(CalendarDay.from(date))
+                    for (event in items) {
+                        allEvents.add(event)
+                        var start: DateTime? = event.start.dateTime
+                        if (start == null) {
+                            start = event.start.date
+                        }
+                        val date = Date(start!!.value)
+                        hash.add(CalendarDay.from(date))
 
-                }
-                return eventStrings
+                    }
+                    return eventStrings
             }
 
 
