@@ -1,4 +1,4 @@
-package com.jferris.calendarintegration.calendar
+package com.jferris.calendarintegration.utils
 
 import android.Manifest
 import android.accounts.AccountManager
@@ -7,27 +7,18 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.AsyncTask
-import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import android.support.v4.content.ContextCompat
-import android.support.v7.widget.LinearLayoutManager
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.support.v7.app.AppCompatActivity
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.extensions.android.http.AndroidHttp
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.DateTime
-import com.google.api.client.util.ExponentialBackOff
-import com.google.api.services.calendar.CalendarScopes
-import com.google.api.services.calendar.model.Event
 import com.jferris.calendarintegration.R
-import com.jferris.calendarintegration.adapter.EventAdapter
+import com.jferris.calendarintegration.calendar.CalendarDecorator
 import com.prolificinteractive.materialcalendarview.CalendarDay
-import com.prolificinteractive.materialcalendarview.OnDateSelectedListener
 import kotlinx.android.synthetic.main.fragment_calendar_scroll.*
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
@@ -35,199 +26,17 @@ import java.io.IOException
 import java.util.*
 
 /**
- * Created by jferris on 06/07/17.
+ * Created by jferris on 12/07/17.status
  *
  */
-class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.PermissionCallbacks {
-    var mPresenter: CalendarContract.Presenter? = null
-    private val SCOPES = arrayOf(CalendarScopes.CALENDAR)
+class PermissionUtils(val activity: AppCompatActivity) {
     var mCredential: GoogleAccountCredential? = null
-    val hash: HashSet<CalendarDay> = HashSet()
-    val eventList: ArrayList<Event> = ArrayList()
-    val allEvents: ArrayList<Event> = ArrayList()
-    var decorator: CalendarDecorator? = null
-    var adapter: EventAdapter? = null
 
     private val PREF_ACCOUNT_NAME = "accountName"
-
-
     internal val REQUEST_ACCOUNT_PICKER = 1000
     internal val REQUEST_AUTHORIZATION = 1001
     internal val REQUEST_GOOGLE_PLAY_SERVICES = 1002
     internal val REQUEST_PERMISSION_GET_ACCOUNTS = 1003
-
-
-    override fun setPresenter(presenter: CalendarContract.Presenter) {
-        mPresenter = presenter
-    }
-
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val root = inflater!!.inflate(R.layout.fragment_scroll, container, false)
-
-        return root
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-
-        mCredential = GoogleAccountCredential.usingOAuth2(
-                activity.getApplicationContext(), Arrays.asList<String>(*SCOPES))
-                .setBackOff(ExponentialBackOff())
-
-        val recyclerView = event_list
-        adapter = EventAdapter(mPresenter!!.eventList)
-        recyclerView.adapter = adapter
-        val layoutManager = object : LinearLayoutManager(activity) {
-            override fun canScrollVertically(): Boolean {
-                return false
-            }
-
-            override fun canScrollHorizontally(): Boolean {
-                return false
-            }
-        }
-        recyclerView.layoutManager = layoutManager
-
-        scroll_view.isNestedScrollingEnabled = true
-        recyclerView.isNestedScrollingEnabled = false
-
-//        scroll_view.viewTreeObserver.addOnScrollChangedListener {
-//            val scrollY = scroll_view.scrollY
-////            val scrollX = scroll_view.scrollX
-//
-//            if(scrollY < 100) {
-//                calendarView.alpha = 1f
-//                calendarView.visibility = View.VISIBLE
-//                calendarViewWeek.visibility = View.INVISIBLE
-//            }
-//            else if(scrollY in 201..999) {
-//
-//                calendarView.alpha = 1f - (scrollY / 1000)
-//                calendarView.visibility = View.VISIBLE
-//                calendarViewWeek.visibility = View.INVISIBLE
-//            }
-////            else if(scrollY > 500) {
-////                calendarView.alpha = 0.5f
-////                calendarView.visibility = View.VISIBLE
-////                calendarViewWeek.visibility = View.INVISIBLE
-////            }
-////            else if(scrollY > 700) {
-////                calendarView.alpha = 0.3f
-////                calendarView.visibility = View.VISIBLE
-////                calendarViewWeek.alpha = 0.1f
-////                calendarViewWeek.visibility = View.VISIBLE
-////            }
-////            else if(scrollY > 900) {
-////                calendarView.alpha = 0.1f
-////                calendarView.visibility = View.VISIBLE
-////                calendarViewWeek.alpha = 0.5f
-////                calendarViewWeek.visibility = View.VISIBLE
-////            }
-//            else  {
-//                calendarView.visibility = View.INVISIBLE
-//                calendarViewWeek.alpha = 1f
-//                scroll_view.scrollTo(0,1001)
-//            }
-//
-//        }
-
-        mPresenter?.calculateRecyclerHeight(calendarViewWeek)
-
-        calendarView.setOnDateChangedListener(OnDateSelectedListener { widget, date, selected ->
-            run {
-//                if (date in hash) {
-//                    val params = recyclerView.layoutParams
-//                    params.height = recyclerHeight
-//                    recyclerView.layoutParams.height = recyclerHeight
-//
-//                    calendarViewWeek.selectedDate = date
-//                    calendarViewWeek.setCurrentDate(date)
-//
-//                    eventList.clear()
-//                    for (i in allEvents) {
-//                        var start: DateTime? = i.start.dateTime
-//                        if (start == null) {
-//                            start = i.start.date
-//                        }
-//                        val tempDate = Calendar.getInstance()
-//                        tempDate.timeInMillis = start!!.value
-//                        if (date.day == tempDate.get(Calendar.DAY_OF_MONTH) &&
-//                                date.month == tempDate.get(Calendar.MONTH) &&
-//                                date.year == tempDate.get(Calendar.YEAR)) {
-//                            eventList.add(i)
-//                            eventList.add(i)
-//                            eventList.add(i)
-//                            eventList.add(i)
-//                        }
-//
-//                        adapter!!.notifyDataSetChanged()
-//                        scroll_view.scrollTo(0,1001)
-//                        calendarView.visibility = View.INVISIBLE
-//                        calendarViewWeek.visibility = View.VISIBLE
-//                        calendarViewWeek.alpha = 1f
-//                    }
-//                } else {
-//                        eventList.clear()
-//                        adapter!!.notifyDataSetChanged()
-//                }
-                mPresenter?.onMonthDatePressed(date, allEvents)
-                mPresenter?.calculateRecyclerHeight(calendarView)
-            }
-        })
-        getResultsFromApi()
-
-//
-//        sync_button.setOnClickListener {
-//            getResultsFromApi()
-//        }
-//
-//        add_button.setOnClickListener {
-//            AddNewCalendarEvent(mCredential as GoogleAccountCredential, activity).execute()
-//        }
-    }
-
-    override fun setRecyclerViewHeight(height: Int) {
-        event_list.layoutParams.height = height
-    }
-
-    override fun setMonthDate(date: CalendarDay) {
-        calendarView.currentDate = date
-    }
-
-    override fun setWeekDate(date: CalendarDay) {
-        calendarViewWeek.currentDate = date
-    }
-
-    override fun setMonthSelectedDate(date: CalendarDay) {
-        calendarView.selectedDate = date
-    }
-
-    override fun setWeekSelectedDate(date: CalendarDay) {
-        calendarViewWeek.selectedDate = date
-    }
-
-    override fun updateData() {
-        adapter?.notifyDataSetChanged()
-    }
-
-    override fun setMonthVisibility(visibility: Int) {
-        calendarView.visibility = visibility
-    }
-
-    override fun setWeekVisibility(visibility: Int) {
-        calendarViewWeek.visibility = visibility
-    }
-
-    override fun setMonthAlpha(alpha: Float) {
-        calendarView.alpha = alpha
-    }
-
-    override fun setWeekAlpha(alpha: Float) {
-        calendarViewWeek.alpha = alpha
-    }
-
-    override fun scrollTo(x: Int, y: Int) {
-        scroll_view.scrollTo(x, y)
-    }
 
     /**
      * Attempt to call the API, after verifying that all the preconditions are
@@ -269,7 +78,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                 getResultsFromApi()
             } else {
                 // Start a dialog from which the user can choose an account
-                startActivityForResult(
+                activity.startActivityForResult(
                         mCredential!!.newChooseAccountIntent(),
                         REQUEST_ACCOUNT_PICKER)
             }
@@ -295,9 +104,9 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
      * @param data Intent (containing result data) returned by incoming
      * *     activity result.
      */
-    override fun onActivityResult(
+    fun onActivityResult(
             requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
+        activity.onActivityReenter(resultCode, data)
         when (requestCode) {
             REQUEST_GOOGLE_PLAY_SERVICES -> if (resultCode != Activity.RESULT_OK) {
 //                mOutputText.setText(
@@ -333,10 +142,10 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
      * @param grantResults The grant results for the corresponding permissions
      * *     which is either PERMISSION_GRANTED or PERMISSION_DENIED. Never null.
      */
-    override fun onRequestPermissionsResult(requestCode: Int,
+    fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>,
                                             grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        activity.onRequestPermissionsResult(requestCode, permissions, grantResults)
         EasyPermissions.onRequestPermissionsResult(
                 requestCode, permissions, grantResults, this)
     }
@@ -349,7 +158,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
      * *
      * @param list The requested permission list. Never null.
      */
-    override fun onPermissionsGranted(requestCode: Int, list: List<String>) {
+    fun onPermissionsGranted(requestCode: Int, list: List<String>) {
         // Do nothing.
     }
 
@@ -361,7 +170,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
      * *
      * @param list The requested permission list. Never null.
      */
-    override fun onPermissionsDenied(requestCode: Int, list: List<String>) {
+    fun onPermissionsDenied(requestCode: Int, list: List<String>) {
         // Do nothing.
     }
 
@@ -415,8 +224,6 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         dialog.show()
     }
 
-
-
     private inner class MakeRequestTask internal constructor(credential: GoogleAccountCredential, activity: FragmentActivity) : AsyncTask<Void, Void, List<String>>() {
         private var mService: com.google.api.services.calendar.Calendar? = null
         private var mLastError: Exception? = null
@@ -469,16 +276,16 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
 
 //                allEvents.clear()
                 for (event in items) {
-                    allEvents.add(event)
+//                    allEvents.add(event)
                     var start: DateTime? = event.start.dateTime
                     if (start == null) {
                         start = event.start.date
                     }
                     val date = Date(start!!.value)
-                    hash.add(CalendarDay.from(date))
+//                    hash.add(CalendarDay.from(date))
 
                 }
-                mPresenter?.setHash(hash)
+//                mPresenter!!.setHash(hash)
                 return eventStrings
             }
 
@@ -488,9 +295,9 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         }
 
         override fun onPostExecute(output: List<String>?) {
-            decorator = CalendarDecorator(ContextCompat.getColor(context, R.color.colorAccent), hash)
-            calendarView.addDecorator(decorator)
-            calendarViewWeek.addDecorator(decorator)
+//            decorator = CalendarDecorator(ContextCompat.getColor(context, R.color.colorAccent), hash)
+//            calendarView.addDecorator(decorator)
+//            calendarViewWeek.addDecorator(decorator)
         }
 
         override fun onCancelled() {
