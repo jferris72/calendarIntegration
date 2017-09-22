@@ -15,10 +15,12 @@ import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.extensions.android.http.AndroidHttp
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.DateTime
 import com.google.api.client.util.ExponentialBackOff
@@ -27,8 +29,7 @@ import com.google.api.services.calendar.model.Event
 import com.jferris.calendarintegration.R
 import com.jferris.calendarintegration.adapter.EventAdapter
 import com.prolificinteractive.materialcalendarview.CalendarDay
-import com.prolificinteractive.materialcalendarview.OnDateSelectedListener
-import kotlinx.android.synthetic.main.fragment_calendar_scroll.*
+import kotlinx.android.synthetic.main.fragment_scroll.*
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
 import java.io.IOException
@@ -51,21 +52,18 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     private val PREF_ACCOUNT_NAME = "accountName"
 
 
-    internal val REQUEST_ACCOUNT_PICKER = 1000
-    internal val REQUEST_AUTHORIZATION = 1001
-    internal val REQUEST_GOOGLE_PLAY_SERVICES = 1002
-    internal val REQUEST_PERMISSION_GET_ACCOUNTS = 1003
+    private val REQUEST_ACCOUNT_PICKER = 1000
+    private val REQUEST_AUTHORIZATION = 1001
+    private val REQUEST_GOOGLE_PLAY_SERVICES = 1002
+    private val REQUEST_PERMISSION_GET_ACCOUNTS = 1003
 
 
     override fun setPresenter(presenter: CalendarContract.Presenter) {
         mPresenter = presenter
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val root = inflater!!.inflate(R.layout.fragment_scroll, container, false)
-
-        return root
-    }
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+            inflater?.inflate(R.layout.fragment_scroll, container, false)
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
 
@@ -90,103 +88,18 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         scroll_view.isNestedScrollingEnabled = true
         recyclerView.isNestedScrollingEnabled = false
 
-//        scroll_view.viewTreeObserver.addOnScrollChangedListener {
-//            val scrollY = scroll_view.scrollY
-////            val scrollX = scroll_view.scrollX
-//
-//            if(scrollY < 100) {
-//                calendarView.alpha = 1f
-//                calendarView.visibility = View.VISIBLE
-//                calendarViewWeek.visibility = View.INVISIBLE
-//            }
-//            else if(scrollY in 201..999) {
-//
-//                calendarView.alpha = 1f - (scrollY / 1000)
-//                calendarView.visibility = View.VISIBLE
-//                calendarViewWeek.visibility = View.INVISIBLE
-//            }
-////            else if(scrollY > 500) {
-////                calendarView.alpha = 0.5f
-////                calendarView.visibility = View.VISIBLE
-////                calendarViewWeek.visibility = View.INVISIBLE
-////            }
-////            else if(scrollY > 700) {
-////                calendarView.alpha = 0.3f
-////                calendarView.visibility = View.VISIBLE
-////                calendarViewWeek.alpha = 0.1f
-////                calendarViewWeek.visibility = View.VISIBLE
-////            }
-////            else if(scrollY > 900) {
-////                calendarView.alpha = 0.1f
-////                calendarView.visibility = View.VISIBLE
-////                calendarViewWeek.alpha = 0.5f
-////                calendarViewWeek.visibility = View.VISIBLE
-////            }
-//            else  {
-//                calendarView.visibility = View.INVISIBLE
-//                calendarViewWeek.alpha = 1f
-//                scroll_view.scrollTo(0,1001)
-//            }
-//
-//        }
-
-        mPresenter?.calculateRecyclerHeight(calendarViewWeek)
-
-        calendarView.setOnDateChangedListener(OnDateSelectedListener { widget, date, selected ->
+        calendarView.setOnDateChangedListener( { _, date, _ ->
             run {
-//                if (date in hash) {
-//                    val params = recyclerView.layoutParams
-//                    params.height = recyclerHeight
-//                    recyclerView.layoutParams.height = recyclerHeight
-//
-//                    calendarViewWeek.selectedDate = date
-//                    calendarViewWeek.setCurrentDate(date)
-//
-//                    eventList.clear()
-//                    for (i in allEvents) {
-//                        var start: DateTime? = i.start.dateTime
-//                        if (start == null) {
-//                            start = i.start.date
-//                        }
-//                        val tempDate = Calendar.getInstance()
-//                        tempDate.timeInMillis = start!!.value
-//                        if (date.day == tempDate.get(Calendar.DAY_OF_MONTH) &&
-//                                date.month == tempDate.get(Calendar.MONTH) &&
-//                                date.year == tempDate.get(Calendar.YEAR)) {
-//                            eventList.add(i)
-//                            eventList.add(i)
-//                            eventList.add(i)
-//                            eventList.add(i)
-//                        }
-//
-//                        adapter!!.notifyDataSetChanged()
-//                        scroll_view.scrollTo(0,1001)
-//                        calendarView.visibility = View.INVISIBLE
-//                        calendarViewWeek.visibility = View.VISIBLE
-//                        calendarViewWeek.alpha = 1f
-//                    }
-//                } else {
-//                        eventList.clear()
-//                        adapter!!.notifyDataSetChanged()
-//                }
                 mPresenter?.onMonthDatePressed(date, allEvents)
-                mPresenter?.calculateRecyclerHeight(calendarView)
             }
         })
         getResultsFromApi()
 
-//
-//        sync_button.setOnClickListener {
-//            getResultsFromApi()
-//        }
-//
-//        add_button.setOnClickListener {
-//            AddNewCalendarEvent(mCredential as GoogleAccountCredential, activity).execute()
-//        }
     }
 
     override fun setRecyclerViewHeight(height: Int) {
         event_list.layoutParams.height = height
+        scroll_view.invalidate()
     }
 
     override fun setMonthDate(date: CalendarDay) {
@@ -229,35 +142,18 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         scroll_view.scrollTo(x, y)
     }
 
-    /**
-     * Attempt to call the API, after verifying that all the preconditions are
-     * satisfied. The preconditions are: Google Play Services installed, an
-     * account was selected and the device currently has online access. If any
-     * of the preconditions are not satisfied, the app will prompt the user as
-     * appropriate.
-     */
     private fun getResultsFromApi() {
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices()
         } else if (mCredential!!.getSelectedAccountName() == null) {
             chooseAccount()
         } else if (!isDeviceOnline()) {
-//            mOutputText.setText("No network connection available.")
+            Toast.makeText(context, "No network connection", Toast.LENGTH_LONG).show()
         } else {
             MakeRequestTask(mCredential!!, activity).execute()
         }
     }
 
-    /**
-     * Attempts to set the account used with the API credentials. If an account
-     * name was previously saved it will use that one; otherwise an account
-     * picker dialog will be shown to the user. Note that the setting the
-     * account to use with the credentials object requires the app to have the
-     * GET_ACCOUNTS permission, which is requested here if it is not already
-     * present. The AfterPermissionGranted annotation indicates that this
-     * function will be rerun automatically whenever the GET_ACCOUNTS permission
-     * is granted.
-     */
     @AfterPermissionGranted(1003)
     private fun chooseAccount() {
         if (EasyPermissions.hasPermissions(
@@ -283,25 +179,12 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         }
     }
 
-    /**
-     * Called when an activity launched here (specifically, AccountPicker
-     * and authorization) exits, giving you the requestCode you started it with,
-     * the resultCode it returned, and any additional data from it.
-     * @param requestCode code indicating which activity result is incoming.
-     * *
-     * @param resultCode code indicating the result of the incoming
-     * *     activity result.
-     * *
-     * @param data Intent (containing result data) returned by incoming
-     * *     activity result.
-     */
     override fun onActivityResult(
             requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQUEST_GOOGLE_PLAY_SERVICES -> if (resultCode != Activity.RESULT_OK) {
-//                mOutputText.setText(
-//                        "This app requires Google Play Services. Please install " + "Google Play Services on your device and relaunch this app.")
+                Toast.makeText(context, "This app requires google play services", Toast.LENGTH_LONG).show()
             } else {
                 getResultsFromApi()
             }
@@ -323,16 +206,6 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         }
     }
 
-    /**
-     * Respond to requests for permissions at runtime for API 23 and above.
-     * @param requestCode The request code passed in
-     * *     requestPermissions(android.app.Activity, String, int, String[])
-     * *
-     * @param permissions The requested permissions. Never null.
-     * *
-     * @param grantResults The grant results for the corresponding permissions
-     * *     which is either PERMISSION_GRANTED or PERMISSION_DENIED. Never null.
-     */
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>,
                                             grantResults: IntArray) {
@@ -341,55 +214,26 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                 requestCode, permissions, grantResults, this)
     }
 
-    /**
-     * Callback for when a permission is granted using the EasyPermissions
-     * library.
-     * @param requestCode The request code associated with the requested
-     * *         permission
-     * *
-     * @param list The requested permission list. Never null.
-     */
     override fun onPermissionsGranted(requestCode: Int, list: List<String>) {
         // Do nothing.
     }
 
-    /**
-     * Callback for when a permission is denied using the EasyPermissions
-     * library.
-     * @param requestCode The request code associated with the requested
-     * *         permission
-     * *
-     * @param list The requested permission list. Never null.
-     */
     override fun onPermissionsDenied(requestCode: Int, list: List<String>) {
         // Do nothing.
     }
 
-    /**
-     * Checks whether the device currently has a network connection.
-     * @return true if the device has a network connection, false otherwise.
-     */
     private fun isDeviceOnline(): Boolean {
         val connMgr = activity.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = connMgr.activeNetworkInfo
         return networkInfo != null && networkInfo.isConnected
     }
 
-    /**
-     * Check that Google Play services APK is installed and up to date.
-     * @return true if Google Play Services is available and up to
-     * *     date on this device; false otherwise.
-     */
     private fun isGooglePlayServicesAvailable(): Boolean {
         val apiAvailability = GoogleApiAvailability.getInstance()
         val connectionStatusCode = apiAvailability.isGooglePlayServicesAvailable(activity)
         return connectionStatusCode == ConnectionResult.SUCCESS
     }
 
-    /**
-     * Attempt to resolve a missing, out-of-date, invalid or disabled Google
-     * Play Services installation via a user dialog, if possible.
-     */
     private fun acquireGooglePlayServices() {
         val apiAvailability = GoogleApiAvailability.getInstance()
         val connectionStatusCode = apiAvailability.isGooglePlayServicesAvailable(activity)
@@ -398,13 +242,6 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         }
     }
 
-
-    /**
-     * Display an error dialog showing that Google Play Services is missing
-     * or out of date.
-     * @param connectionStatusCode code describing the presence (or lack of)
-     * *     Google Play Services on this device.
-     */
     internal fun showGooglePlayServicesAvailabilityErrorDialog(
             connectionStatusCode: Int) {
         val apiAvailability = GoogleApiAvailability.getInstance()
@@ -414,8 +251,6 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                 REQUEST_GOOGLE_PLAY_SERVICES)
         dialog.show()
     }
-
-
 
     private inner class MakeRequestTask internal constructor(credential: GoogleAccountCredential, activity: FragmentActivity) : AsyncTask<Void, Void, List<String>>() {
         private var mService: com.google.api.services.calendar.Calendar? = null
@@ -430,31 +265,21 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                     .build()
         }
 
-        /**
-         * Background task to call Google Calendar API.
-         * @param params no parameters needed for this task.
-         */
         override fun doInBackground(vararg params: Void): List<String>? {
             try {
                 return dataFromApi
             } catch (e: Exception) {
                 mLastError = e
-                cancel(true)
+                if(e is UserRecoverableAuthIOException) {
+                    startActivity(e.intent)
+                    return dataFromApi
+                }
                 return null
             }
 
         }
 
-        /**
-         * Fetch a list of the next 10 events from the primary calendar.
-         * @return List of Strings describing returned events.
-         * *
-         * @throws IOException
-         */
-        private // List the next 10 events from the primary calendar.
-                // All-day events don't have start times, so just use
-                // the start date.
-        val dataFromApi: List<String>
+        private val dataFromApi: List<String>
             @Throws(IOException::class)
             get() {
                 val now = DateTime(System.currentTimeMillis())
@@ -467,7 +292,6 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                         .execute()
                 val items = events.items
 
-//                allEvents.clear()
                 for (event in items) {
                     allEvents.add(event)
                     var start: DateTime? = event.start.dateTime

@@ -25,8 +25,6 @@ class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Pres
 
     override fun onWeekDatePressed(date: CalendarDay, allEvents: ArrayList<Event>) {
         if (date in mHash) {
-//            calculateRecyclerHeight()
-
             mView.setMonthSelectedDate(date)
             mView.setMonthDate(date)
 
@@ -43,11 +41,23 @@ class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Pres
                         date.month == tempDate.get(Calendar.MONTH) &&
                         date.year == tempDate.get(Calendar.YEAR)) {
                     eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
                 }
 
                 mView.updateData()
                 mView.scrollTo(0, 1001)
-                mView.setMonthVisibility(View.INVISIBLE)
+                mView.setMonthVisibility(View.GONE)
                 mView.setWeekVisibility(View.VISIBLE)
                 mView.setWeekAlpha(1f)
             }
@@ -59,7 +69,6 @@ class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Pres
 
     override fun onMonthDatePressed(date: CalendarDay, allEvents: ArrayList<Event>) {
         if (date in mHash) {
-//            calculateRecyclerHeight()
 
             mView.setWeekSelectedDate(date)
             mView.setWeekDate(date)
@@ -76,11 +85,23 @@ class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Pres
                         date.month == tempDate.get(Calendar.MONTH) &&
                         date.year == tempDate.get(Calendar.YEAR)) {
                     eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
+                    eventList.add(i)
                 }
 
                 mView.updateData()
                 mView.scrollTo(0, 1001)
-                mView.setMonthVisibility(View.INVISIBLE)
+                mView.setMonthVisibility(View.GONE)
                 mView.setWeekVisibility(View.VISIBLE)
 //                mView.setWeekAlpha(1f)
             }
