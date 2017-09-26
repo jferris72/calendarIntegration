@@ -25,9 +25,7 @@ class CalendarListScroller: NestedScrollView {
         mScrollable = enabled
     }
 
-    fun isScrollable(): Boolean {
-        return mScrollable
-    }
+    fun isScrollable(): Boolean = mScrollable
 
     override fun onTouchEvent(ev: MotionEvent): Boolean {
         if(ev.action == MotionEvent.ACTION_DOWN) {

@@ -9,7 +9,6 @@ import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentActivity
 import android.support.v4.content.ContextCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
@@ -42,11 +41,11 @@ import java.util.*
 class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.PermissionCallbacks {
     var mPresenter: CalendarContract.Presenter? = null
     private val SCOPES = arrayOf(CalendarScopes.CALENDAR)
-    var mCredential: GoogleAccountCredential? = null
+    private var mCredential: GoogleAccountCredential? = null
     val hash: HashSet<CalendarDay> = HashSet()
     val allEvents: ArrayList<Event> = ArrayList()
     var decorator: CalendarDecorator? = null
-    var adapter: EventAdapter? = null
+    private var adapter: EventAdapter? = null
 
     private val PREF_ACCOUNT_NAME = "accountName"
 
@@ -66,20 +65,16 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
 
         mCredential = GoogleAccountCredential.usingOAuth2(
-                activity.getApplicationContext(), Arrays.asList<String>(*SCOPES))
+                activity.applicationContext, Arrays.asList<String>(*SCOPES))
                 .setBackOff(ExponentialBackOff())
 
         val recyclerView = event_list
         adapter = EventAdapter(mPresenter!!.eventList)
         recyclerView.adapter = adapter
-        val layoutManager = object : LinearLayoutManager(activity) {
-            override fun canScrollVertically(): Boolean {
-                return false
-            }
 
-            override fun canScrollHorizontally(): Boolean {
-                return false
-            }
+        val layoutManager = object : LinearLayoutManager(activity) {
+            override fun canScrollVertically(): Boolean = false
+            override fun canScrollHorizontally(): Boolean = false
         }
         recyclerView.layoutManager = layoutManager
 
@@ -94,7 +89,6 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
 
         scroll_view.viewTreeObserver.addOnScrollChangedListener {
             val scrollY = scroll_view.scrollY
-            val scrollX = scroll_view.scrollX
 
             if(scrollY < 100) {
                 calendarView.alpha = 1f
@@ -182,38 +176,36 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     private fun getResultsFromApi() {
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices()
-        } else if (mCredential!!.getSelectedAccountName() == null) {
+        } else if (mCredential!!.selectedAccountName == null) {
             chooseAccount()
         } else if (!isDeviceOnline()) {
             Toast.makeText(context, "No network connection", Toast.LENGTH_LONG).show()
         } else {
-            MakeRequestTask(mCredential!!, activity).execute()
+            MakeRequestTask(mCredential!!).execute()
         }
     }
 
     @AfterPermissionGranted(1003)
-    private fun chooseAccount() {
-        if (EasyPermissions.hasPermissions(
-                activity, Manifest.permission.GET_ACCOUNTS)) {
-            val accountName = activity.getPreferences(Context.MODE_PRIVATE)
-                    .getString(PREF_ACCOUNT_NAME, null)
-            if (accountName != null) {
-                mCredential!!.setSelectedAccountName(accountName)
-                getResultsFromApi()
-            } else {
-                // Start a dialog from which the user can choose an account
-                startActivityForResult(
-                        mCredential!!.newChooseAccountIntent(),
-                        REQUEST_ACCOUNT_PICKER)
-            }
+    private fun chooseAccount() = if (EasyPermissions.hasPermissions(
+            activity, Manifest.permission.GET_ACCOUNTS)) {
+        val accountName = activity.getPreferences(Context.MODE_PRIVATE)
+                .getString(PREF_ACCOUNT_NAME, null)
+        if (accountName != null) {
+            mCredential!!.selectedAccountName = accountName
+            getResultsFromApi()
         } else {
-            // Request the GET_ACCOUNTS permission via a user dialog
-            EasyPermissions.requestPermissions(
-                    this,
-                    "This app needs to access your Google account (via Contacts).",
-                    REQUEST_PERMISSION_GET_ACCOUNTS,
-                    Manifest.permission.GET_ACCOUNTS)
+            // Start a dialog from which the user can choose an account
+            startActivityForResult(
+                    mCredential!!.newChooseAccountIntent(),
+                    REQUEST_ACCOUNT_PICKER)
         }
+    } else {
+        // Request the GET_ACCOUNTS permission via a user dialog
+        EasyPermissions.requestPermissions(
+                this,
+                "This app needs to access your Google account (via Contacts).",
+                REQUEST_PERMISSION_GET_ACCOUNTS,
+                Manifest.permission.GET_ACCOUNTS)
     }
 
     override fun onActivityResult(
@@ -233,7 +225,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                     val editor = settings.edit()
                     editor.putString(PREF_ACCOUNT_NAME, accountName)
                     editor.apply()
-                    mCredential!!.setSelectedAccountName(accountName)
+                    mCredential!!.selectedAccountName = accountName
                     getResultsFromApi()
                 }
             }
@@ -279,7 +271,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         }
     }
 
-    internal fun showGooglePlayServicesAvailabilityErrorDialog(
+    private fun showGooglePlayServicesAvailabilityErrorDialog(
             connectionStatusCode: Int) {
         val apiAvailability = GoogleApiAvailability.getInstance()
         val dialog = apiAvailability.getErrorDialog(
@@ -289,7 +281,7 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
         dialog.show()
     }
 
-    private inner class MakeRequestTask internal constructor(credential: GoogleAccountCredential, activity: FragmentActivity) : AsyncTask<Void, Void, List<String>>() {
+    private inner class MakeRequestTask internal constructor(credential: GoogleAccountCredential) : AsyncTask<Void, Void, List<String>>() {
         private var mService: com.google.api.services.calendar.Calendar? = null
         private var mLastError: Exception? = null
 

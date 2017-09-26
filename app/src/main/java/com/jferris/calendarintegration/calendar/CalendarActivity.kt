@@ -7,7 +7,7 @@ import com.jferris.calendarintegration.R
 import com.jferris.calendarintegration.utils.ActivityUtils
 
 class CalendarActivity : AppCompatActivity() {
-    var mPresenter: CalendarContract.Presenter? = null
+    private var mPresenter: CalendarContract.Presenter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

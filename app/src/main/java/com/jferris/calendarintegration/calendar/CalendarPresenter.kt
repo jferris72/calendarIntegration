@@ -2,7 +2,6 @@ package com.jferris.calendarintegration.calendar
 
 import android.graphics.Point
 import android.support.v4.app.Fragment
-import android.view.View
 import com.google.api.client.util.DateTime
 import com.google.api.services.calendar.model.Event
 import com.prolificinteractive.materialcalendarview.CalendarDay
@@ -14,9 +13,9 @@ import kotlin.collections.HashSet
  * Created by jferris on 06/07/17.
  *
  */
-class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Presenter {
+class CalendarPresenter(private val mView: CalendarContract.View): CalendarContract.Presenter {
     override var eventList: ArrayList<Event> = ArrayList()
-    var mHash: HashSet<CalendarDay> = HashSet()
+    private var mHash: HashSet<CalendarDay> = HashSet()
 
     init {
         checkNotNull(mView)

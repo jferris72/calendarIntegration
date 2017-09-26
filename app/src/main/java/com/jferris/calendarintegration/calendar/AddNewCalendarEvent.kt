@@ -17,7 +17,6 @@ import java.util.*
  */
 class AddNewCalendarEvent internal constructor(credential: GoogleAccountCredential, activity: FragmentActivity): AsyncTask<Void, Void, String>() {
     private var service: com.google.api.services.calendar.Calendar? = null
-    private var mLastError: Exception? = null
     val mActivity = activity
 
     init {
