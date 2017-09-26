@@ -44,13 +44,11 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
     private val SCOPES = arrayOf(CalendarScopes.CALENDAR)
     var mCredential: GoogleAccountCredential? = null
     val hash: HashSet<CalendarDay> = HashSet()
-    val eventList: ArrayList<Event> = ArrayList()
     val allEvents: ArrayList<Event> = ArrayList()
     var decorator: CalendarDecorator? = null
     var adapter: EventAdapter? = null
 
     private val PREF_ACCOUNT_NAME = "accountName"
-
 
     private val REQUEST_ACCOUNT_PICKER = 1000
     private val REQUEST_AUTHORIZATION = 1001
@@ -93,8 +91,47 @@ class CalendarFragment: Fragment(), CalendarContract.View, EasyPermissions.Permi
                 mPresenter?.onMonthDatePressed(date, allEvents)
             }
         })
-        getResultsFromApi()
 
+        scroll_view.viewTreeObserver.addOnScrollChangedListener {
+            val scrollY = scroll_view.scrollY
+            val scrollX = scroll_view.scrollX
+
+            if(scrollY < 100) {
+                calendarView.alpha = 1f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.visibility = View.INVISIBLE
+            }
+            if(scrollY > 300) {
+                calendarView.alpha = 0.7f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.visibility = View.INVISIBLE
+            }
+            if(scrollY > 500) {
+                calendarView.alpha = 0.5f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.visibility = View.INVISIBLE
+            }
+            if(scrollY > 700) {
+                calendarView.alpha = 0.3f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.alpha = 0.1f
+                calendarViewWeek.visibility = View.VISIBLE
+            }
+            if(scrollY > 900) {
+                calendarView.alpha = 0.1f
+                calendarView.visibility = View.VISIBLE
+                calendarViewWeek.alpha = 0.5f
+                calendarViewWeek.visibility = View.VISIBLE
+            }
+            if(scrollY > 1000) {
+                calendarView.visibility = View.INVISIBLE
+                calendarViewWeek.alpha = 1f
+//                scroll_view.scrollTo(0,1001)
+            }
+
+        }
+
+        getResultsFromApi()
     }
 
     override fun setRecyclerViewHeight(height: Int) {

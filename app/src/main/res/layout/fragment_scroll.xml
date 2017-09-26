@@ -27,8 +27,7 @@
                 android:layout_height="wrap_content"
                 app:mcv_showOtherDates="all"
                 app:mcv_selectionColor="#00F"
-                app:mcv_calendarMode="month"
-                android:layout_marginBottom="24dp"/>
+                app:mcv_calendarMode="month" />
 
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/event_list"
@@ -52,7 +51,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:paddingBottom="24dp"
         android:background="@android:color/white"/>
 
 </android.support.constraint.ConstraintLayout>

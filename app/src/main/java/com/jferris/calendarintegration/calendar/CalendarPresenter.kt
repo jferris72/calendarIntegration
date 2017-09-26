@@ -28,7 +28,6 @@ class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Pres
             mView.setMonthSelectedDate(date)
             mView.setMonthDate(date)
 
-
             eventList.clear()
             for (i in allEvents) {
                 var start: DateTime? = i.start.dateTime
@@ -56,9 +55,9 @@ class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Pres
                 }
 
                 mView.updateData()
-                mView.scrollTo(0, 1001)
-                mView.setMonthVisibility(View.GONE)
-                mView.setWeekVisibility(View.VISIBLE)
+//                mView.scrollTo(0, 1001)
+//                mView.setMonthVisibility(View.GONE)
+//                mView.setWeekVisibility(View.VISIBLE)
                 mView.setWeekAlpha(1f)
             }
         } else {
@@ -69,7 +68,6 @@ class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Pres
 
     override fun onMonthDatePressed(date: CalendarDay, allEvents: ArrayList<Event>) {
         if (date in mHash) {
-
             mView.setWeekSelectedDate(date)
             mView.setWeekDate(date)
 
@@ -100,9 +98,9 @@ class CalendarPresenter(val mView: CalendarContract.View): CalendarContract.Pres
                 }
 
                 mView.updateData()
-                mView.scrollTo(0, 1001)
-                mView.setMonthVisibility(View.GONE)
-                mView.setWeekVisibility(View.VISIBLE)
+//                mView.scrollTo(0, 1001)
+//                mView.setMonthVisibility(View.GONE)
+//                mView.setWeekVisibility(View.VISIBLE)
 //                mView.setWeekAlpha(1f)
             }
         } else {
